@@ -37,6 +37,16 @@
             maxlength="20"
           ></el-input>
         </el-form-item>
+        <el-form-item prop="password2" v-show="mode === 'register'">
+          <label>重复密码</label>
+          <el-input
+            type="password"
+            v-model="ruleForm.password2"
+            size="medium"
+            minlength="6"
+            maxlength="20"
+          ></el-input>
+        </el-form-item>
         <el-form-item prop="code">
           <label>验证码</label>
           <el-row :gutter="10">
@@ -66,18 +76,20 @@
   </div>
 </template>
 <script>
-import { stripscript } from "@/utils/validate";
+import {
+  stripscript,
+  validateUser,
+  ChecCode,
+  validatePass
+} from "@/utils/validate";
 export default {
   data() {
     // 用户名验证
     var validateUsername = (rule, value, callback) => {
-      let Username = stripscript(value);
-      this.ruleForm.username = Username;
-      let res = /\w[-\w.+]*@([A-Za-z0-9][-A-Za-z0-9]+\.)+[A-Za-z]{2,14}/;
       if (value === "") {
         callback(new Error("请输入用户名"));
-      } else if (!res.test(value)) {
-        callback(new Error("用户名输入不正确"));
+      } else if (validateUser(value)) {
+        callback(new Error("用户名输入格式错误"));
       } else {
         callback();
       }
@@ -86,25 +98,28 @@ export default {
     var validatePassword = (rule, value, callback) => {
       let passwd = stripscript(value);
       this.ruleForm.passwd = passwd;
-      let res = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[^]{6,20}$/;
-      console.log(res.test(value));
       if (value === "") {
         callback(new Error("请输入密码"));
-      } else if (!res.test(value)) {
+      } else if (validatePass(passwd)) {
         callback(new Error("密码输入格式有误"));
+      } else {
+        callback();
+      }
+    };
+    var validatePassword2 = (rule, value, callback) => {
+      if (value === "") {
+        callback(new Error("请重新输入密码"));
+      } else if (this.ruleForm.password !== value) {
+        callback(new Error("两次密码不一样重新输入"));
       } else {
         callback();
       }
     };
     //验证码验证
     var checCode = (rule, value, callback) => {
-      let code = stripscript(value);
-      this.ruleForm.code = code;
-      e;
-      let res = /^[a-z0-9]{6}$/;
       if (value === "") {
         callback(new Error("验证码为空"));
-      } else if (!res.test(value)) {
+      } else if (ChecCode(value)) {
         callback(new Error("验证码格式有误"));
       } else {
         callback();
@@ -112,17 +127,20 @@ export default {
     };
     return {
       meadTab: [
-        { txt: "登录", current: true },
-        { txt: "注册", current: false }
+        { txt: "登录", current: true, type: "login" },
+        { txt: "注册", current: false, type: "register" }
       ],
       ruleForm: {
         username: "",
         password: "",
+        password2: "",
         code: ""
       },
+      mode: "login",
       rules: {
         username: [{ validator: validateUsername, trigger: "blur" }],
         password: [{ validator: validatePassword, trigger: "blur" }],
+        password2: [{ validator: validatePassword2, trigger: "blur" }],
         code: [{ validator: checCode, trigger: "blur" }]
       }
     };
@@ -133,6 +151,7 @@ export default {
         el.current = false;
       });
       el.current = true;
+      this.mode = el.type;
     },
     submitForm(formName) {
       this.$refs[formName].validate(valid => {
