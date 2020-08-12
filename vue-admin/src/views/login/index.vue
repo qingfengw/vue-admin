@@ -70,7 +70,9 @@
             type="danger"
             class="sub margint-top"
             @click="submitForm('ruleForm')"
-            >提交</el-button
+            disabled
+          >
+            {{ model === "login" ? "登录" : "注册" }}</el-button
           >
         </el-form-item>
       </el-form>
@@ -93,7 +95,7 @@ import { reactive, ref, onMounted } from "@vue/composition-api";
 export default {
   // eslint-disable-next-line no-unused-vars
   //vue3.0将所有的data数据、生命周期函数、自定义函数存在setup中
-  setup(props, { refs }) {
+  setup(props, { refs, root }) {
     //定义函数的地方
     // ref中存取基本数据类型
     // 注意要先函数在变量不然会出现不可预知的错误。
@@ -159,7 +161,25 @@ export default {
     };
     // 获取验证码
     let getsms = () => {
-      GetSms();
+      if (ruleForm.username == "") {
+        root.$message.error("邮箱不能为空！！");
+        return false;
+      }
+      if (validateUser(ruleForm.username)) {
+        root.$message.error("邮箱格式有误，请重新输入！！");
+        return false;
+      }
+      let requestData = {
+        username: ruleForm.username,
+        module: "login"
+      };
+      GetSms(requestData)
+        .then(res => {
+          console.log(res);
+        })
+        .catch(err => {
+          console.log(err);
+        });
     };
     // reactive中存取引用数据类型
     //存放数据的地方
@@ -183,7 +203,7 @@ export default {
     // 生命周期函数
     onMounted(() => {
       //拿到开发者模式中值的方法
-      console.log(process.env.VUE_APP_HTTP);
+      // console.log(process.env.VUE_APP_HTTP);
     });
     //返回出去
     return {
